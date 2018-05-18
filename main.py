@@ -1,8 +1,9 @@
 import numpy as np
-from utils import init_weights
+from utils import init_weights, softmax
 
+# text8 : # 17005207개
 TEST_FILE = 'text8_modified.txt'
-VECTOR_SIZE = 10
+EMBEDDING_SIZE = 10
 
 class Word2Vec() :
 
@@ -53,13 +54,27 @@ class Word2Vec() :
         return in_weight[word_index]
 
     def hidden_to_output(self, hidden_vector, out_weight):
-        return np.dot(hidden_vector, out_weight)
+        u = np.dot(out_weight.T, hidden_vector) # W'T (V x N) * h (N x 1)
+        y = softmax(u)
+
+        return y
+
+    def skip_gram(self):
+        word2vec = Word2Vec()
+        word_list = word2vec.read_words(TEST_FILE) # 단어 리스트 생성 & 단어 개수 파악
+
+        indexed_word = word2vec.indexing_words(word_list) # 단어에 indexing
+
+        in_weight = init_weights((WORD_LENGTH, EMBEDDING_SIZE)) # W 생성
+        out_weight = init_weights((EMBEDDING_SIZE, WORD_LENGTH)) # W' 생성
+
+        for word in word_list:
+            h = word2vec.input_to_hidden(in_weight, indexed_word[word]) # hidden layer의 vector 생성, 실제로는 곱하지 않고 단어의 index 위치의 row를 읽어온다
+            y = word2vec.hidden_to_output(h, out_weight) # hidden layer의 vector와 W'을 곱하고 softmax를 한다.
+
+            # TODO 2018-05-18 Back-Propagation 기능 구현
+
 
 if __name__ == "__main__":
     word2vec = Word2Vec()
-    word_list = word2vec.read_words(TEST_FILE)
-    # word2vec.indexing_words(word_list)
-    # word2vec.get_frequency_words(word_list)
-
-    # print(len(word_list)) # 17005207개
-    # word2vec.convert_to_vector(word_list)
+    word2vec.skip_gram()

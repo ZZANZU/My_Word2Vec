@@ -1,9 +1,6 @@
 import numpy as np
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-# 랜덤값으로 체워진 Weight 행렬 생성
+# 랜덤값으로 체워진 Weight 행렬 생성, xavier/he initialization
 def init_weights(shape):
     return np.random.randn(*shape).astype(np.float32) / np.sqrt(sum(shape))
 
