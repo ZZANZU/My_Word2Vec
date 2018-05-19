@@ -1,5 +1,5 @@
 import numpy as np
-from utils import init_weights, softmax
+from utils import init_weights, softmax, one_hot
 
 # text8 : # 17005207개
 TEST_FILE = 'text8_modified.txt'
@@ -79,23 +79,28 @@ class Word2Vec() :
             center_word = indexed_word.get(i) # center word
             center_one_hot = np.zeros_like(word_list, dtype=int)
             center_one_hot[i] = 1
-            print(center_one_hot)
+
             context = [] # center word 주변 단어들을 저장
 
+            ''' context 리스트 생성 '''
             for j in range(i - window_size, i + window_size + 1): # 현재 단어에서 window size 반경의 단어
-                if i + j >= 0 and i + j != i: # 단어의 index가 0 이상이고 center word가 아닌 것들 중에서만
+                if j >= 0 and j != i: # 단어의 index가 0 이상이고 center word가 아닌 것들 중에서만
                     context.append(indexed_word[j]) # context word에 추가
 
+            ''' 실제 연산 & weight update'''
+            for j in range(i - window_size, i + window_size + 1):
+                if j >= 0 and j != i:
+                    h = word2vec.input_to_hidden(in_weight, i)  # hidden layer의 vector 생성, 실제로는 곱하지 않고 단어의 index 위치의 row를 읽어온다
+                    y = word2vec.hidden_to_output(h, out_weight)  # hidden layer의 vector와 W'을 곱하고 softmax를 한다.
 
-                h = word2vec.input_to_hidden(in_weight, i) # hidden layer의 vector 생성, 실제로는 곱하지 않고 단어의 index 위치의 row를 읽어온다
-                y = word2vec.hidden_to_output(h, out_weight) # hidden layer의 vector와 W'을 곱하고 softmax를 한다.
+                    label_one_hot = one_hot(word_list, i+j)
 
-                e = np.array([-label + y.T for label in context])
-                new_in_weight = np.outer(center_one_hot, np.dot(out_weight, np.sum(e, axis=0)))
-                new_out_weight = np.outer(h, np.sum(e, axis=0))
+                    e = np.array([-label_one_hot + y.T for label in context])
+                    new_in_weight = np.outer(center_one_hot, np.dot(out_weight, np.sum(e, axis=0)))
+                    new_out_weight = np.outer(h, np.sum(e, axis=0))
 
-                in_weight = in_weight - learning_rate * new_in_weight
-                out_weight = out_weight - learning_rate * new_out_weight
+                    in_weight = in_weight - learning_rate * new_in_weight
+                    out_weight = out_weight - learning_rate * new_out_weight
 
 
 if __name__ == "__main__":

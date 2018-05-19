@@ -19,3 +19,9 @@ def softmax(x):
         x /= tmp
 
     return x
+
+def one_hot(word_list, index):
+    one_hot_vector = np.zeros_like(word_list, dtype=int)
+    one_hot_vector[index] = 1
+
+    return one_hot_vector
