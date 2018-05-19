@@ -10,13 +10,16 @@ class Word2Vec() :
 
     ''' 텍스트 파일의 단어들을 리스트로 바꿔줌 '''
     def read_words(self, words_file):
-        with open(words_file, 'r') as f:
+        with open(TEST_FILE, 'r') as f:
             input_words = []
             for line in f:
-                input_words.append(line.split())
+                input_line = line.split()
+                for word in input_line:
+                    input_words.append(word)
 
         global WORD_LENGTH # 단어 개수를 전역변수로 선언
-        WORD_LENGTH = len(list(set(input_words))) # text8_modified.txt : 11233
+        # WORD_LENGTH = len(list(set(input_words))) # text8_modified.txt : 11233
+        WORD_LENGTH = len(input_words)
 
         return input_words
 
@@ -28,7 +31,7 @@ class Word2Vec() :
 
     ''' 단어를 indexing '''
     def indexing_words(self, word_list):
-        word_list = list(set(word_list)) # 중복제거
+        # word_list = list(set(word_list)) # 중복제거
 
         indexed_word_dict = {} # 단어별로 indexing된 dictionary 선언
 
@@ -74,6 +77,9 @@ class Word2Vec() :
                 print("learning word [" + str(i) + "]" + indexed_word.get(i))
 
             center_word = indexed_word.get(i) # center word
+            center_one_hot = np.zeros_like(word_list, dtype=int)
+            center_one_hot[i] = 1
+            print(center_one_hot)
             context = [] # center word 주변 단어들을 저장
 
             for j in range(i - window_size, i + window_size + 1): # 현재 단어에서 window size 반경의 단어
@@ -85,7 +91,7 @@ class Word2Vec() :
                 y = word2vec.hidden_to_output(h, out_weight) # hidden layer의 vector와 W'을 곱하고 softmax를 한다.
 
                 e = np.array([-label + y.T for label in context])
-                new_in_weight = np.outer(center_word, np.dot(out_weight, np.sum(e, axis=0)))
+                new_in_weight = np.outer(center_one_hot, np.dot(out_weight, np.sum(e, axis=0)))
                 new_out_weight = np.outer(h, np.sum(e, axis=0))
 
                 in_weight = in_weight - learning_rate * new_in_weight
@@ -93,17 +99,5 @@ class Word2Vec() :
 
 
 if __name__ == "__main__":
-    # word2vec = Word2Vec()
-    # a = word2vec.indexing_words(word2vec.read_words(TEST_FILE))
-    # # print(a.get(3))
-    # word2vec.skip_gram(learning_rate=0.1, window_size=2)
-    with open(TEST_FILE, 'r') as f:
-        input_words = []
-        for line in f:
-            input_words.append(line.split())
-            for word in input_words:
-                input_words.append(word)
-        print(input_words)
-    # global WORD_LENGTH  # 단어 개수를 전역변수로 선언
-    # WORD_LENGTH = len(list(set(input_words)))  # text8_modified.txt : 11233
-    # print(WORD_LENGTH)
+    word2vec = Word2Vec()
+    word2vec.skip_gram(learning_rate=0.1, window_size=2)
