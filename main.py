@@ -10,7 +10,7 @@ class Word2Vec() :
 
     ''' 텍스트 파일의 단어들을 리스트로 바꿔줌 '''
     def read_words(self, words_file):
-        with open(TEST_FILE, 'r') as f:
+        with open(words_file, 'r') as f:
             input_words = []
             for line in f:
                 input_line = line.split()
@@ -18,7 +18,6 @@ class Word2Vec() :
                     input_words.append(word)
 
         global WORD_LENGTH # 단어 개수를 전역변수로 선언
-        # WORD_LENGTH = len(list(set(input_words))) # text8_modified.txt : 11233
         WORD_LENGTH = len(input_words)
 
         return input_words
@@ -59,9 +58,8 @@ class Word2Vec() :
 
     def hidden_to_output(self, hidden_vector, out_weight):
         u = np.dot(out_weight.T, hidden_vector) # W'T (V x N) * h (N x 1)
-        y = softmax(u)
 
-        return y
+        return u
 
     def skip_gram(self, learning_rate, window_size):
         word2vec = Word2Vec()
@@ -72,14 +70,14 @@ class Word2Vec() :
         in_weight = init_weights((WORD_LENGTH, EMBEDDING_SIZE)) # W 생성
         out_weight = init_weights((EMBEDDING_SIZE, WORD_LENGTH)) # W' 생성
 
+        loss = 0
+
         for i in range(0, WORD_LENGTH + 1):
             if i % 100 == 0:
                 print("learning word [" + str(i) + "]" + indexed_word.get(i))
+                print("loss : " + loss)
 
-            center_word = indexed_word.get(i) # center word
-            center_one_hot = np.zeros_like(word_list, dtype=int)
-            center_one_hot[i] = 1
-
+            center_one_hot = one_hot(word_list, i)
             context = [] # center word 주변 단어들을 저장
 
             ''' context 리스트 생성 '''
@@ -91,7 +89,8 @@ class Word2Vec() :
             for j in range(i - window_size, i + window_size + 1):
                 if j >= 0 and j != i:
                     h = word2vec.input_to_hidden(in_weight, i)  # hidden layer의 vector 생성, 실제로는 곱하지 않고 단어의 index 위치의 row를 읽어온다
-                    y = word2vec.hidden_to_output(h, out_weight)  # hidden layer의 vector와 W'을 곱하고 softmax를 한다.
+                    u = word2vec.hidden_to_output(h, out_weight)  # hidden layer의 vector와 W'을 곱하고 softmax를 한다.
+                    y = softmax(u)
 
                     label_one_hot = one_hot(word_list, i+j)
 
@@ -101,6 +100,8 @@ class Word2Vec() :
 
                     in_weight = in_weight - learning_rate * new_in_weight
                     out_weight = out_weight - learning_rate * new_out_weight
+
+                    loss += -np.sum([u[label_one_hot == 1] for label in context]) + len(context) * np.log(np.sum(np.exp(u)))
 
 
 if __name__ == "__main__":
